@@ -3,6 +3,7 @@
 package blockhash
 
 import (
+	//	"fmt"
 	"math"
 	"math/rand"
 	"testing"
@@ -33,7 +34,7 @@ func cmptest(a, b []byte) bool {
 	return true
 }
 
-const testcnt = 80
+const testcnt = 10
 
 func testlen(i int) int {
 
@@ -45,17 +46,16 @@ func testlen(i int) int {
 }
 
 func TestBlockHashStorage(t *testing.T) {
+	t.Logf("Creating DBStorage...")
 
-	t.Logf("Creating DiskStorage...")
-
-	diskstore := new(dpaDiskStorage)
-	diskstore.Init(nil)
-	go diskstore.Run()
+	dbstore := new(dpaDBStorage)
+	dbstore.Init(nil)
+	go dbstore.Run()
 
 	t.Logf("Creating MemStorage...")
 
 	memstore := new(dpaMemStorage)
-	memstore.Init(&diskstore.dpaStorage)
+	memstore.Init(&dbstore.dpaStorage)
 	go memstore.Run()
 
 	t.Logf("Storing test vectors...")

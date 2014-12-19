@@ -2,9 +2,9 @@
 
 package blockhash
 
-const MaxEntries = 10000 // max number of stored (cached) blocks
-const MemTreeLW = 2      // log2(subtree count) of the subtrees
-const MemTreeFLW = 14    // log2(subtree count) of the root layer
+const MaxEntries = 500 // max number of stored (cached) blocks
+const MemTreeLW = 2    // log2(subtree count) of the subtrees
+const MemTreeFLW = 14  // log2(subtree count) of the root layer
 
 type dpaMemStorage struct {
 	dpaStorage
