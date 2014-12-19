@@ -14,13 +14,13 @@ import (
 const DiskTreeLevels = 2
 const DiskTreeLW = 8
 
-type bhtDiskStorage struct {
-	bhtStorage
+type dpaDiskStorage struct {
+	dpaStorage
 }
 
 func diskStorePathName(hash HashType) (string, string) {
 
-	path := "BHTstore/"
+	path := "DPAstore/"
 	for i := 0; i < DiskTreeLevels; i++ {
 		path += fmt.Sprintf("%02x/", byte(hash.bits(uint(i*DiskTreeLW), uint(DiskTreeLW))))
 	}
@@ -31,7 +31,7 @@ func diskStorePathName(hash HashType) (string, string) {
 
 }
 
-func (s *bhtDiskStorage) add(entry *bhtStoreReq) {
+func (s *dpaDiskStorage) add(entry *dpaStoreReq) {
 
 	path, name := diskStorePathName(entry.hash)
 
@@ -48,7 +48,7 @@ func (s *bhtDiskStorage) add(entry *bhtStoreReq) {
 		}
 
 		data := make([]byte, len(entry.data)+8)
-		binary.LittleEndian.PutUint64(data[0:8], entry.size)
+		binary.LittleEndian.PutUint64(data[0:8], uint64(entry.size))
 		copy(data[8:], entry.data[:])
 
 		err = ioutil.WriteFile(name, data, 0)
@@ -59,7 +59,7 @@ func (s *bhtDiskStorage) add(entry *bhtStoreReq) {
 	}
 }
 
-func (s *bhtDiskStorage) find(hash HashType) (entry *bhtStoreReq) {
+func (s *dpaDiskStorage) find(hash HashType) (entry *dpaStoreReq) {
 
 	_, name := diskStorePathName(hash)
 
@@ -77,17 +77,17 @@ func (s *bhtDiskStorage) find(hash HashType) (entry *bhtStoreReq) {
 		return nil
 	}
 
-	entry = new(bhtStoreReq)
+	entry = new(dpaStoreReq)
 	entry.hash = hash
 	entry.data = make([]byte, len(data)-8)
 	copy(entry.data[:], data[8:])
-	entry.size = binary.LittleEndian.Uint64(data[0:8])
+	entry.size = int64(binary.LittleEndian.Uint64(data[0:8]))
 
 	return entry
 
 }
 
-func (s *bhtDiskStorage) process_store(req *bhtStoreReq) {
+func (s *dpaDiskStorage) process_store(req *dpaStoreReq) {
 
 	s.add(req)
 
@@ -97,7 +97,7 @@ func (s *bhtDiskStorage) process_store(req *bhtStoreReq) {
 
 }
 
-func (s *bhtDiskStorage) process_retrieve(req *bhtRetrieveReq) {
+func (s *dpaDiskStorage) process_retrieve(req *dpaRetrieveReq) {
 
 	entry := s.find(req.hash)
 	if entry == nil {
@@ -107,23 +107,23 @@ func (s *bhtDiskStorage) process_retrieve(req *bhtRetrieveReq) {
 		}
 	}
 
-	res := new(bhtRetrieveRes)
+	res := new(dpaRetrieveRes)
 	if entry != nil {
-		res.bhtNode = entry.bhtNode
+		res.dpaNode = entry.dpaNode
 	}
 	res.req_id = req.req_id
 	req.result_chn <- res
 
 }
 
-func (s *bhtDiskStorage) Init(ch *bhtStorage) {
+func (s *dpaDiskStorage) Init(ch *dpaStorage) {
 
-	s.bhtStorage.Init()
+	s.dpaStorage.Init()
 	s.chain = ch
 
 }
 
-func (s *bhtDiskStorage) Run() {
+func (s *dpaDiskStorage) Run() {
 
 	for {
 		bb := true

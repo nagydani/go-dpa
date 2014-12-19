@@ -6,9 +6,9 @@ const MaxEntries = 10000 // max number of stored (cached) blocks
 const MemTreeLW = 2      // log2(subtree count) of the subtrees
 const MemTreeFLW = 14    // log2(subtree count) of the root layer
 
-type bhtMemStorage struct {
-	bhtStorage
-	memtree    *bhtMemTree
+type dpaMemStorage struct {
+	dpaStorage
+	memtree    *dpaMemTree
 	entry_cnt  uint   // stored entries
 	access_cnt uint64 // access counter; oldest is thrown away when full
 }
@@ -26,24 +26,24 @@ a hash prefix subtree containing subtrees or one storage entry (but never both)
   (access[] is a binary tree inside the multi-bit leveled hash tree)
 */
 
-type bhtMemTree struct {
-	subtree    []*bhtMemTree
-	parent     *bhtMemTree
+type dpaMemTree struct {
+	subtree    []*dpaMemTree
+	parent     *dpaMemTree
 	parent_idx uint
 
 	bits  uint // log2(subtree count)
 	width uint // subtree count
 
-	entry  *bhtStoreReq // if subtrees are present, entry should be nil
+	entry  *dpaStoreReq // if subtrees are present, entry should be nil
 	access []uint64
 }
 
-func newTreeNode(b uint, parent *bhtMemTree, pidx uint) (node *bhtMemTree) {
+func newTreeNode(b uint, parent *dpaMemTree, pidx uint) (node *dpaMemTree) {
 
-	node = new(bhtMemTree)
+	node = new(dpaMemTree)
 	node.bits = b
 	node.width = 1 << uint(b)
-	node.subtree = make([]*bhtMemTree, node.width)
+	node.subtree = make([]*dpaMemTree, node.width)
 	node.access = make([]uint64, node.width-1)
 	node.parent = parent
 	node.parent_idx = pidx
@@ -55,7 +55,7 @@ func newTreeNode(b uint, parent *bhtMemTree, pidx uint) (node *bhtMemTree) {
 
 }
 
-func (node *bhtMemTree) update_access(a uint64) {
+func (node *dpaMemTree) update_access(a uint64) {
 
 	aidx := uint(0)
 	var aa uint64
@@ -87,7 +87,7 @@ func (node *bhtMemTree) update_access(a uint64) {
 
 }
 
-func (s *bhtMemStorage) add(entry *bhtStoreReq) {
+func (s *dpaMemStorage) add(entry *dpaStoreReq) {
 
 	s.access_cnt++
 
@@ -141,7 +141,7 @@ func (s *bhtMemStorage) add(entry *bhtStoreReq) {
 
 }
 
-func (s *bhtMemStorage) find(hash HashType) (entry *bhtStoreReq) {
+func (s *dpaMemStorage) find(hash HashType) (entry *dpaStoreReq) {
 
 	node := s.memtree
 	bitpos := uint(0)
@@ -164,7 +164,7 @@ func (s *bhtMemStorage) find(hash HashType) (entry *bhtStoreReq) {
 	}
 }
 
-func (s *bhtMemStorage) remove_oldest() {
+func (s *dpaMemStorage) remove_oldest() {
 
 	node := s.memtree
 
@@ -235,7 +235,7 @@ func (s *bhtMemStorage) remove_oldest() {
 
 // process store channel requests
 
-func (s *bhtMemStorage) process_store(req *bhtStoreReq) {
+func (s *dpaMemStorage) process_store(req *dpaStoreReq) {
 
 	if s.entry_cnt >= MaxEntries {
 		s.remove_oldest()
@@ -250,7 +250,7 @@ func (s *bhtMemStorage) process_store(req *bhtStoreReq) {
 
 // process retrieve channel requests
 
-func (s *bhtMemStorage) process_retrieve(req *bhtRetrieveReq) {
+func (s *dpaMemStorage) process_retrieve(req *dpaRetrieveReq) {
 
 	entry := s.find(req.hash)
 	if entry == nil {
@@ -260,18 +260,18 @@ func (s *bhtMemStorage) process_retrieve(req *bhtRetrieveReq) {
 		}
 	}
 
-	res := new(bhtRetrieveRes)
+	res := new(dpaRetrieveRes)
 	if entry != nil {
-		res.bhtNode = entry.bhtNode
+		res.dpaNode = entry.dpaNode
 	}
 	res.req_id = req.req_id
 	req.result_chn <- res
 
 }
 
-func (s *bhtMemStorage) Init(ch *bhtStorage) {
+func (s *dpaMemStorage) Init(ch *dpaStorage) {
 
-	s.bhtStorage.Init()
+	s.dpaStorage.Init()
 	s.memtree = newTreeNode(MemTreeFLW, nil, 0)
 	s.chain = ch
 
@@ -279,7 +279,7 @@ func (s *bhtMemStorage) Init(ch *bhtStorage) {
 
 // storage main goroutine; always processes store messages first
 
-func (s *bhtMemStorage) Run() {
+func (s *dpaMemStorage) Run() {
 
 	for {
 		bb := true
